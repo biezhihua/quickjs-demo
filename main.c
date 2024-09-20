@@ -24,7 +24,7 @@ static void js_std_add_console(JSContext *ctx) {
     // 获取全局对象
     global_obj = JS_GetGlobalObject(ctx);
 
-    // 创建 console 对象
+    // 创建 console 对象R
     console = JS_NewObject(ctx);
 
     // 给 console 对象添加 log 方法
@@ -36,10 +36,14 @@ static void js_std_add_console(JSContext *ctx) {
     JS_FreeValue(ctx, global_obj);
 }
 
+
+/**
+ * http://numcalc.com/
+ */
 int main() {
     JSRuntime *rt;
     JSContext *ctx;
-    const char *js_code = "console.log('Hello, QuickJS from C!');";
+    const char *js_code = "(function() { return 52; })()";
 
     // 初始化 QuickJS 运行时和上下文
     rt = JS_NewRuntime();
@@ -59,9 +63,32 @@ int main() {
     js_std_add_console(ctx);
 
     // 执行 JavaScript 代码
-    JS_Eval(ctx, js_code, strlen(js_code), "<input>", JS_EVAL_TYPE_GLOBAL);
+    // JS_Eval(ctx, js_code, strlen(js_code), "index.js", JS_EVAL_TYPE_GLOBAL);
+    const JSValue val = JS_Eval(ctx, js_code, strlen(js_code), "index.js", JS_EVAL_TYPE_GLOBAL);
+    // const JSValue val = JS_Eval(ctx, js_code, strlen(js_code), "index.js", JS_EVAL_TYPE_MODULE);
 
-    // 释放资源
+    printf("val.tag %ld\n", val.tag);
+
+    // 检查返回值是否是错误
+    if (JS_IsException(val)) {
+        printf("Error executing JS code.\n");
+        JSValue exception = JS_GetException(ctx);
+        const char *error = JS_ToCString(ctx, exception);
+        printf("JS Exception: %s\n", error);
+        JS_FreeCString(ctx, error);
+        JS_FreeValue(ctx, exception);
+    } else {
+        // 输出结果
+        int result;
+        if (JS_ToInt32(ctx, &result, val) == 0) {
+            printf("Returned value: %d\n", result);
+        }
+    }
+
+    // 释放 JSValue
+    JS_FreeValue(ctx, val);
+
+    // 释放资源®
     JS_FreeContext(ctx);
     JS_FreeRuntime(rt);
 
